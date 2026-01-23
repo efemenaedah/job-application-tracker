@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS CloudFormation template to create an S3 bucket for static website hosting.
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: The name of the S3 bucket. Must be globally unique.
+    # Note: S3 bucket names cannot contain uppercase letters or non-alphanumeric characters (except hyphens)
+    Default: my-unique-website-bucket-name
+
+Resources:
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      # Required to allow public access for website hosting
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+    DeletionPolicy: Retain # Prevents accidental deletion of the bucket and its contents when the stack is deleted
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: PublicReadGetObject
+          Effect: Allow
+          Principal: '*'
+          Action: s3:GetObject
+          Resource: !Sub 'arn:aws:s3:::${WebsiteBucket}/*' # Grants public read access to all objects in the bucket
+
+Outputs:
+  WebsiteURL:
+    Description: URL for the S3 static website
+    Value: !GetAtt WebsiteBucket.WebsiteURL
+  BucketName:
+    Description: Name of the created S3 Bucket
+    Value: !Ref WebsiteBucket
